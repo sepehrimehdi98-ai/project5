@@ -12,6 +12,7 @@ The front end now uses the provided Figma Make React design. For local setup and
 - `api/` — server API handlers for login, sessions, quiz, and study activity.
 - `lib/` — shared backend services: database, authorization, password hashing, sessions, demo auth, and media adapters.
 - `db/` — PostgreSQL schema.
+- `src/english-lessons.json` — English-only A1 demo curriculum, shared by the React frontend and Node API so lesson selection and AI context stay aligned.
 - `scripts/` — database migration and one-time admin setup.
 - `test/` — automated checks for backend/security foundations.
 - `docs/` — project handoff and operational notes.
@@ -26,6 +27,10 @@ Requirements: Node.js 20.19 or newer. PostgreSQL is required for persistent acco
 ### Local demo accounts (no database)
 
 For a review demo only, copy `.env.example` to `.env`, leave `DATABASE_URL` blank, and set `NOVA_DEMO_MODE=true`. Run `npm run dev`, then open `http://127.0.0.1:3002`. Choose Python or English and select a demo role; no username or password is required. Demo role sessions are signed by the server and are not real accounts.
+
+### English course design
+
+The demo keeps English lessons separate from Python in `src/english-lessons.json`. Each A1 lesson progresses through vocabulary preparation, short contextual dialogue, a comprehension question, and a personal speaking or writing task. This learning sequence follows CEFR A1 goals and the activity patterns used in British Council A1 [reading](https://learnenglish.britishcouncil.org/free-resources/reading/a1), [speaking](https://learnenglish.britishcouncil.org/free-resources/speaking/a1), and [listening](https://learnenglish.britishcouncil.org/free-resources/listening/a1) resources. The demo's sample dialogues and exercises are original and are not copied from those pages.
 
 1. Copy `.env.example` to `.env` in this project folder.
 2. Set `DATABASE_URL` to a PostgreSQL connection string and leave `DATABASE_SSL=require` for hosted databases. Do not paste credentials into chat or frontend code.
