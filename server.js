@@ -196,7 +196,7 @@ async function askAI(body) {
         response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST', signal: controller.signal,
           headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', ...(process.env.OPENROUTER_HTTP_REFERER ? { 'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER } : {}), ...(process.env.OPENROUTER_APP_TITLE ? { 'X-Title': process.env.OPENROUTER_APP_TITLE } : {}) },
-          body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.35 : 0.25, reasoning: { enabled: false }, max_tokens: mode === 'teacher' ? 1000 : mode === 'knowledge_twin' ? 1800 : 900 })
+          body: JSON.stringify({ model: MODEL, provider: { allow_fallbacks: true, sort: 'throughput' }, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.35 : 0.25, reasoning: { enabled: false }, max_tokens: mode === 'teacher' ? 1000 : mode === 'knowledge_twin' ? 1800 : 900 })
         });
         payload = await response.json().catch(() => ({}));
       } finally { clearTimeout(timer); }
