@@ -50,5 +50,12 @@ test('builder offers a type picker, video upload, and browser demo publishing', 
   assert.match(app, /<MediaUploader path=\{path\} lessonId=/);
   assert.match(app, /localStorage\.setItem\(publishedKey/);
   assert.match(app, /StudentPublishedBlock/);
+  assert.match(app, /نمونه درخواست‌های آماده/);
+  assert.match(app, /نمایش نمونه پاسخ قابل ویرایش/);
+  assert.match(app, /نمونه قالب پاسخ/);
+  assert.match(app, /inline-block-editor/);
+  assert.match(app, /updateBlock\(b\.id/);
+  assert.match(app, /گزینه‌ها و پاسخ درست/);
+  assert.match(app, /getEnglishLesson\(lessonId\)\.title/);
 });
 
