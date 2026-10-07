@@ -184,16 +184,23 @@ async function askAI(body) {
     : mode === 'teacher'
       ? `برای موضوع «${context.topic}» یک پیش‌نویس کامل طبق قالب و قواعد پیام سیستم آماده کن. پیش‌نویس را مرتب، خوانا و آماده بازبینی مدرس بنویس.`
       : 'ارزیابی را فقط بر اساس شواهد ارائه‌شده انجام بده و JSON مطابق قالب برگردان.';
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), process.env.VERCEL ? 55_000 : 90_000);
+  const deadline = Date.now() + (process.env.VERCEL ? 55_000 : 90_000);
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST', signal: controller.signal,
-      headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', ...(process.env.OPENROUTER_HTTP_REFERER ? { 'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER } : {}), ...(process.env.OPENROUTER_APP_TITLE ? { 'X-Title': process.env.OPENROUTER_APP_TITLE } : {}) },
-      body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.35 : 0.25, reasoning: { enabled: false }, max_tokens: mode === 'teacher' ? 1000 : mode === 'knowledge_twin' ? 1800 : 900 })
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
+    let response, payload, answer;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const remaining = deadline - Date.now();
+      if (remaining < 1000) throw Object.assign(new Error('پاسخ هوش مصنوعی بیش از حد طول کشید؛ دوباره تلاش کنید.'), { status: 504 });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), remaining);
+      try {
+        response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST', signal: controller.signal,
+          headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', ...(process.env.OPENROUTER_HTTP_REFERER ? { 'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER } : {}), ...(process.env.OPENROUTER_APP_TITLE ? { 'X-Title': process.env.OPENROUTER_APP_TITLE } : {}) },
+          body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.35 : 0.25, reasoning: { enabled: false }, max_tokens: mode === 'teacher' ? 1000 : mode === 'knowledge_twin' ? 1800 : 900 })
+        });
+        payload = await response.json().catch(() => ({}));
+      } finally { clearTimeout(timer); }
+      if (!response.ok) {
       const messages = {
         400: 'OpenRouter درخواست را نپذیرفت. ممکن است مدل یا یکی از تنظیمات درخواست پشتیبانی نشود.',
         401: 'کلید OpenRouter معتبر نیست؛ مقدار OPENROUTER_API_KEY در فایل .env را بررسی کنید.',
@@ -207,13 +214,15 @@ async function askAI(body) {
       const message = messages[response.status] || `OpenRouter با خطای ${response.status} پاسخ داد.`;
       console.error('OpenRouter error:', response.status, payload.error?.message || '');
       throw Object.assign(new Error(message), { status: response.status === 429 ? 429 : 502 });
-    }
-    const answer = payload.choices?.[0]?.message?.content;
-    if (typeof answer !== 'string' || !answer.trim()) {
+      }
+      answer = payload.choices?.[0]?.message?.content;
+      if (typeof answer === 'string' && answer.trim()) break;
       const choice = payload.choices?.[0];
-      console.error('OpenRouter returned no user-facing text:', JSON.stringify({ finish_reason: choice?.finish_reason, refusal: Boolean(choice?.message?.refusal), reasoning_tokens: payload.usage?.completion_tokens_details?.reasoning_tokens }));
+      console.error('OpenRouter returned no user-facing text:', JSON.stringify({ finish_reason: choice?.finish_reason, refusal: Boolean(choice?.message?.refusal), reasoning_tokens: payload.usage?.completion_tokens_details?.reasoning_tokens, retry: attempt === 0 }));
+      if (attempt === 0 && deadline - Date.now() > 12_000) continue;
       throw Object.assign(new Error('سرویس AI پاسخ متنی برنگرداند. یک بار دیگر تلاش کنید؛ اگر تکرار شد، مدل رایگان OpenRouter ممکن است موقتاً شلوغ باشد.'), { status: 502 });
     }
+    if (typeof answer !== 'string' || !answer.trim()) throw Object.assign(new Error('سرویس AI پاسخ متنی برنگرداند. یک بار دیگر تلاش کنید.'), { status: 502 });
     if (mode === 'tutor') return answer.trim().replace(/(?:^|\n)Progress:\s*.*$/gim, '').trim();
     if (mode === 'knowledge_twin') {
       let twin;
@@ -239,7 +248,7 @@ async function askAI(body) {
       throw Object.assign(new Error('ارتباط سرور با OpenRouter برقرار نشد. دسترسی اینترنتی سرور یا وضعیت موقت سرویس را بررسی کنید و دوباره تلاش کنید.'), { status: 502 });
     }
     throw err;
-  } finally { clearTimeout(timer); }
+  }
 }
 
 function demoLesson(subject, lessonKey) {
