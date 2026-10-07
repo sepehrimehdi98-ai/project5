@@ -79,7 +79,8 @@ Only the allowlisted files in `public/` are served as static files. Never move e
 | Variable | Purpose | Where its real value belongs |
 | --- | --- | --- |
 | `NODE_ENV` | Set to `production` on the hosted app so production cookie/security behavior is used. | Private app environment settings |
-| `NOVA_DEMO_MODE` | `true` only for local demo; set `false` on every hosted app. Production startup rejects an explicit `true`. | Private app environment settings |
+| `NOVA_DEMO_MODE` | Set `true` only for a no-database demo. For real accounts, use `false` with a database. | Private app environment settings |
+| `NOVA_DEMO_SESSION_SECRET` | Long random signing secret required for production demo sessions; never reuse an API key as the session secret. | Private app environment settings |
 | `DATABASE_URL` | PostgreSQL connection URL used by server-side code only. | Private app environment settings; never browser code or chat |
 | `DATABASE_SSL` | Hosted database transport protection; use `require` or `verify-full`, never `disable` in production. | Private app environment settings |
 | `DATABASE_CA_CERT` | Optional provider CA certificate when the database requires certificate verification. | Private app environment settings |
@@ -96,9 +97,9 @@ Only the allowlisted files in `public/` are served as static files. Never move e
 
 For Liara, configure a Node.js app using the project root (the directory containing `package.json`), `npm run build` as its build command, `npm start` as the start command, and Node.js 20.19 or later. The server reads the host-provided `PORT`. For Vercel, `api/[...path].js` provides the same request handler for AI and media routes, while the existing auth, quiz, study-time, and health functions remain separate. The `vercel.json` builds the Vite app into `dist` and sets the AI/media function duration to 60 seconds. These are migration hooks, not proof of a successful hosted deployment: use a PostgreSQL database, enter host secrets privately, and check a Vercel preview deployment on the chosen plan before production.
 
-The full role-based demo should be run locally with `NOVA_DEMO_MODE=true` and `NODE_ENV=development`. Demo accounts are disabled on Vercel and in production. Local demo media metadata/review status can use the ignored `data/media.json` file; Cloudinary still stores the video bytes. Set the Cloudinary variables in the local `.env` if you want to demonstrate video upload. Twin AI needs the OpenRouter key.
+The role-based demo can run locally or as a public Vercel demo without a database. On Vercel, set `NODE_ENV=production`, `NOVA_DEMO_MODE=true`, and a long random `NOVA_DEMO_SESSION_SECRET`, while leaving `DATABASE_URL` empty. Choose a course and sample role from the gate; no password is required. Demo lesson edits and media moderation are local to that browser. Cloudinary stores video files, but the provider keys must be configured privately. The AI needs `OPENROUTER_API_KEY`.
 
-For an initial **deployment preview only**, a staging Node app can run with `NODE_ENV=production` and `NOVA_DEMO_MODE=false` before a database is attached. This confirms the host can run the server and show its login screen/static assets; it does not let you sign in to role dashboards or use backend actions. Do not enable demo accounts on a public host. `/api/health` reports `previewOnly: true` when production has no database URL. Do not invite students or enter real data.
+For a public product rather than a demo, use `NODE_ENV=production`, a configured database, and `NOVA_DEMO_MODE=false`. Without a database, role sessions and backend writes are demo-only. `/api/health` reports `previewOnly: true` when production has no database URL and demo mode is off. Do not enter real student data in the demo.
 
 When ready to connect staging PostgreSQL:
 
@@ -114,7 +115,7 @@ If the database provider blocks connections from the developer computer, do not 
 
 ## 7. Pre-deployment security checklist
 
-- Hosted app explicitly has `NODE_ENV=production`, `NOVA_DEMO_MODE=false`, TLS-enabled PostgreSQL, and no bootstrap password left set.
+- Production product has `NODE_ENV=production`, `NOVA_DEMO_MODE=false`, TLS-enabled PostgreSQL, and no bootstrap password left set.
 - Demo account credentials are not shared for production and cannot authenticate in production.
 - Secrets are stored privately; no real `.env` is in the source archive or version control.
 - Database access is restricted to the app/migration runner where provider networking allows it; backups and a restore procedure are confirmed.
@@ -124,3 +125,4 @@ If the database provider blocks connections from the developer computer, do not 
 - Confirm OpenRouter and selected media provider are reachable from the actual host.
 - Check `/api/health` for configuration flags. A successful health response means the server answered; it is not by itself production sign-off.
 - Verify backup restoration and all workflows on staging before deploying to production or entering student data.
+

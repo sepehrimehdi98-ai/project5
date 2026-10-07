@@ -25,15 +25,7 @@ Requirements: Node.js 20.19 or newer. PostgreSQL is required for persistent acco
 
 ### Local demo accounts (no database)
 
-For a review demo only, copy `.env.example` to `.env`, leave `DATABASE_URL` blank, and set `NOVA_DEMO_MODE=true`. Run `npm run dev`, then open `http://127.0.0.1:3002`.
-
-| Role | Username | Password |
-| --- | --- | --- |
-| Student | `student` | `learn123` |
-| Teacher | `teacher` | `teach123` |
-| Admin | `admin` | `admin123` |
-
-These accounts are development-only, held in server memory, and are disabled when `NODE_ENV=production`, when deployed to Vercel, or when a real database URL is configured. Never use these demo passwords for real accounts.
+For a review demo only, copy `.env.example` to `.env`, leave `DATABASE_URL` blank, and set `NOVA_DEMO_MODE=true`. Run `npm run dev`, then open `http://127.0.0.1:3002`. Choose Python or English and select a demo role; no username or password is required. Demo role sessions are signed by the server and are not real accounts.
 
 1. Copy `.env.example` to `.env` in this project folder.
 2. Set `DATABASE_URL` to a PostgreSQL connection string and leave `DATABASE_SSL=require` for hosted databases. Do not paste credentials into chat or frontend code.
@@ -53,7 +45,7 @@ In database mode, the initial admin is created only by the one-time bootstrap co
 
 ## Staging configuration
 
-The Node server can be deployed as a staging preview before PostgreSQL is attached. This confirms the server and login screen/static assets load; it does not expose signed-in role pages or backend actions. Set `NODE_ENV=production` and `NOVA_DEMO_MODE=false` on every hosted app; without `DATABASE_URL`, login and saved backend operations remain unavailable and `/api/health` reports `previewOnly: true`. For staging with a database, set the database and integration secrets in the host’s private environment settings, run `npm run deploy:check`, then run the schema migration and one-time admin bootstrap. Remove the bootstrap password immediately afterward. `npm run deploy:check` checks variable presence and secure settings only; it does not connect to PostgreSQL or prove the whole product is ready.
+The Node server can be deployed as a no-database demo preview before PostgreSQL is attached. For a public demo that permits selecting a sample role, set `NODE_ENV=production`, `NOVA_DEMO_MODE=true`, and a long random `NOVA_DEMO_SESSION_SECRET` in the host’s private environment settings. Leave `DATABASE_URL` unset. This allows signed sample sessions, but demo content and media review state are browser-local, not shared or permanent. The AI and Cloudinary features also require their provider credentials in the host’s private environment settings. For real use, switch to database-backed accounts with a staging database and `NOVA_DEMO_MODE=false`; run `npm run deploy:check`, then migrate and create the first admin. The deploy check does not connect to PostgreSQL or prove the whole product is ready.
 
 ## Current backend work
 
@@ -76,3 +68,4 @@ The Node entry point now exports the same request handler for local Liara-style 
 This work is not a finished backend or deployment-ready release. Lesson/course builder content, teacher guidance and approved AI sources, and general student completion/progress are still primarily browser-side demo data. Admin user creation/role changes and password resets also need database-backed endpoints and UI wiring. The lesson/quiz content has not been seeded into PostgreSQL, and we have not run migrations against your provider database or verified OpenRouter/Cloudinary connectivity from a hosted Iranian environment.
 
 Next deployment steps: choose the Node host and managed PostgreSQL plan, configure private environment variables in the provider dashboard, run the migration and bootstrap once, then finish and test the remaining database-backed app workflows before inviting real students. Keep staging and production databases separate and test backup restoration before launch.
+

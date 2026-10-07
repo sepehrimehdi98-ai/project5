@@ -56,7 +56,13 @@ export async function uploadLessonVideo(file: File, subject: "python" | "english
     result = await sendChunk(endpoint, form, headers, start, end - start, file.size, onProgress, signal);
   }
   if (!result?.public_id || !result.secure_url || result.public_id !== `${signed.folder}/${signed.publicId}`) throw new Error("Cloudinary مشخصات فایل مطابق درخواست امضاشده را برنگرداند.");
-  const saved = await postJson<{ media: { publicId: string; secureUrl: string; title: string; lessonId: string; status: string; bytes: number; duration: number } }>("/api/media", { publicId: result.public_id, secureUrl: result.secure_url, title: file.name, filename: file.name, lessonId, duration: result.duration || 0, bytes: result.bytes || file.size });
+  const saved = await postJson<{ media: { publicId: string; secureUrl: string; title: string; lessonId: string; status: string; bytes: number; duration: number; uploadedBy?: string } }>("/api/media", { publicId: result.public_id, secureUrl: result.secure_url, title: file.name, filename: file.name, lessonId, duration: result.duration || 0, bytes: result.bytes || file.size });
+  const demoAsset={...saved.media,courseSubject:subject};
+  try {
+    const previous=JSON.parse(localStorage.getItem("nova-demo-media")||"[]") as Array<typeof demoAsset>;
+    localStorage.setItem("nova-demo-media",JSON.stringify([demoAsset,...previous.filter(item=>item.publicId!==demoAsset.publicId)]));
+  } catch { /* Local browser storage is only a demo index; the uploaded Cloudinary asset remains stored. */ }
   onProgress(100);
-  return saved.media;
+  return demoAsset;
 }
+

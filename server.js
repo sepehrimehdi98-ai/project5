@@ -4,7 +4,7 @@ const path = require('node:path');
 const { getSessionUser, requestIsSameOrigin } = require('./lib/sessions');
 const { query } = require('./lib/database');
 const mediaStorage = require('./lib/media-storage');
-const { isDemoMode } = require('./lib/demo-auth');
+const { isDemoMode, getDemoSessionSecret } = require('./lib/demo-auth');
 const { buildAIPrompt } = require('./lib/course-adapters');
 
 loadEnv();
@@ -44,7 +44,7 @@ function loadEnv() {
 function enforceRuntimeSafety() {
   const production = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
   if (!production) return;
-  if (process.env.NOVA_DEMO_MODE === 'true') throw new Error('Unsafe production configuration: NOVA_DEMO_MODE must be false.');
+  if (process.env.NOVA_DEMO_MODE === 'true' && (process.env.DATABASE_URL || !getDemoSessionSecret())) throw new Error('Unsafe demo configuration: public demo mode requires no database and a private signing secret.');
   if (process.env.DATABASE_SSL === 'disable') throw new Error('Unsafe production configuration: DATABASE_SSL cannot be disable.');
   if (process.env.BOOTSTRAP_ADMIN_PASSWORD) throw new Error('Unsafe production configuration: remove temporary admin bootstrap secrets after setup.');
 }
@@ -231,8 +231,8 @@ async function askAI(body) {
 
 function demoLesson(subject, lessonKey) {
   const lessons = {
-    python: { key: 'l2-1', title: 'متغیرها و انواع داده', content: 'در این درس متغیر نامی برای دسترسی دوباره به مقدار است. مثال تأییدشده: name = "Nila"; age = 14; print(name, age).', course: 'پایتون از پایه', level: 'مقدماتی', guidance: '', sources: [] },
-    english: { key: 'en-l1-1', title: 'معرفی خود در یک گفت‌وگوی کوتاه', content: 'در این درس زبان‌آموز نام، شهر و علایق خود را با جمله‌های کوتاه در سطح A1 بیان می‌کند. مثال: Hello, I’m Nila. ترجمه: سلام، من نیلا هستم.', course: 'انگلیسی از پایه · A1', level: 'A1', guidance: '', sources: [] },
+    python: { key: 'l2-1', title: 'متغیرها و انواع داده', content: 'هدف درس: مقدارهای متنی و عددی را در متغیر ذخیره و دوباره استفاده کن. مثال درس: name = "Nila" و age = 14؛ print(name, age) مقدارها را نشان می‌دهد. تمرین: یک متغیر برای نام شهر بساز و آن را چاپ کن.', course: 'پایتون از پایه', level: 'مقدماتی', guidance: 'از تشبیه ساده جعبه نام‌دار استفاده کن. ابتدا تفاوت متن و عدد را با مثال همین درس روشن کن. دانش‌آموز را وادار نکن کد حفظ کند؛ قدم‌به‌قدم توضیح بده و برای خطا یک راهنمایی بده.', sources: [] },
+    english: { key: 'en-l1-1', title: 'معرفی خود در یک گفت‌وگوی کوتاه', content: 'هدف درس A1: زبان‌آموز بتواند نام و شهر محل زندگی خود را معرفی کند و به پرسش ساده پاسخ دهد. واژگان: hello = سلام، name = نام، city = شهر، from = اهلِ. نمونه: ترجمه فارسی: سلام، من نیلا هستم و اهل تهرانم.\nEnglish: Hello, I’m Nila. I’m from Tehran. گفت‌وگو: A: What’s your name? B: I’m Nila. A: Where are you from? B: I’m from Tehran. تمرین: نام و شهر خودت را جایگزین کن.', course: 'انگلیسی از پایه · A1', level: 'A1', guidance: 'برای زبان‌آموز فارسی‌زبان سطح A1 جمله‌ها را کوتاه نگه دار. در هر مثال ترجمه طبیعی فارسی را پیش از جمله انگلیسی بنویس. تفاوت پرسش What’s your name? و Where are you from? را با تمرین گفت‌وگویی بسنج؛ هیچ کد یا مثال پایتون نده.', sources: [] },
   };
   const lesson = lessons[subject];
   if (lessonKey && lesson.key !== lessonKey) throw Object.assign(new Error('این درس به مسیر آموزشی قفل‌شده این نشست تعلق ندارد.'), { status: 403 });
@@ -248,7 +248,11 @@ async function loadAICourseContext(user, body) {
   const subject = user.courseSubject;
   if (!['python', 'english'].includes(subject) || !user.courseId) throw Object.assign(new Error('نشست شما مسیر آموزشی ندارد؛ خارج شوید و دوباره وارد شوید.'), { status: 401 });
   const lessonKey = String(body.lessonId || (subject === 'python' ? 'l2-1' : 'en-l1-1')).slice(0, 120);
-  if (isDemoMode()) return { ...demoLesson(subject, lessonKey), progress: 'در نسخه نمایشی هنوز سابقه پیشرفت ذخیره‌شده‌ای برای این حساب ثبت نشده است.', source: { lessonKey, title: demoLesson(subject, lessonKey).title, courseTitle: demoLesson(subject, lessonKey).course, references: [] } };
+  if (isDemoMode()) {
+    const lesson=demoLesson(subject, lessonKey);
+    const progress=user.role==='student'?(subject==='python'?'درس‌های تکمیل‌شده: 12 از 24. میانگین آزمون: 86%. نیاز به مرور: تفاوت عدد و رشته و قواعد نام‌گذاری متغیر. اعتمادبه‌نفس در تمرین‌های تازه: متوسط.':'درس‌های تکمیل‌شده: 8 از 36. میانگین تمرین واژگان A1: 82%. نیاز به تمرین: پرسیدن و پاسخ‌دادن درباره شهر محل زندگی. اعتمادبه‌نفس در گفت‌وگو: رو به رشد.'):'در نمای دمو، داده پیشرفت دانش‌آموزان نمونه است و به پرونده واقعی وصل نیست.';
+    return { ...lesson, progress, approvedSources: '', source: { lessonKey, title: lesson.title, courseTitle: lesson.course, references: [] } };
+  }
 
   const courseResult = await query(`SELECT id, title, level FROM courses WHERE id = $1 AND subject = $2`, [user.courseId, subject]);
   const course = courseResult.rows[0];
@@ -355,6 +359,7 @@ async function handleRequest(req, res) {
     if (!user) return send(res, 401, { error: 'ابتدا وارد حساب شوید.' });
     try {
       if (isDemoMode()) {
+        if (process.env.VERCEL) return send(res, 200, { media: [] });
         const all = readMediaStore();
         if (!['teacher', 'admin'].includes(user.role)) return send(res, 403, { error: 'فقط مدرس یا مدیر به کتابخانه رسانه دسترسی دارد.' });
         const visible = all.filter(item => item.courseSubject === user.courseSubject && (user.role === 'admin' || item.uploadedBy === user.username));
@@ -373,6 +378,7 @@ async function handleRequest(req, res) {
       if (user.role !== 'student') return send(res, 403, { error: 'فقط زبان‌آموز می‌تواند ویدیوی درس را پخش کند.' });
       const lesson = await resolveScopedLesson(user, decodeURIComponent(lessonMedia[1]));
       if (isDemoMode()) {
+        if (process.env.VERCEL) return send(res, 200, { media: null });
         const media = readMediaStore().find(item => item.lessonId === lesson.externalKey && item.courseSubject === user.courseSubject && item.status === 'approved') || null;
         return send(res, 200, { media });
       }
@@ -400,7 +406,7 @@ async function handleRequest(req, res) {
         let item = items.find(value => value.publicId === publicId && value.provider === adapter.provider);
         if (item) Object.assign(item, { secureUrl: String(playbackUrl), title: String(body.title || body.filename || publicId.split('/').pop()).slice(0, 200), lessonId: lesson.externalKey, courseSubject: user.courseSubject, bytes: verified.bytes, duration: verified.duration, updatedAt: now });
         else { item = { publicId, provider: adapter.provider, secureUrl: String(playbackUrl), title: String(body.title || body.filename || publicId.split('/').pop()).slice(0, 200), filename: String(body.filename || body.title || 'video').slice(0, 200), lessonId: lesson.externalKey, courseSubject: user.courseSubject, bytes: verified.bytes, duration: verified.duration, status: 'pending-review', uploadedBy: user.username, createdAt: now, updatedAt: now }; items.unshift(item); }
-        writeMediaStore(items);
+        if (!process.env.VERCEL) writeMediaStore(items);
         return send(res, 201, { media: item });
       }
       const result = await query(
@@ -425,6 +431,7 @@ async function handleRequest(req, res) {
       const publicId = decodeURIComponent(mediaReview[1]);
       if (isDemoMode()) {
         const items = readMediaStore(), item = items.find(value => value.publicId === publicId);
+        if (process.env.VERCEL) return send(res, 200, { media: { publicId, status: body.status, reviewedBy: user.username, updatedAt: new Date().toISOString() } });
         if (!item || item.courseSubject !== user.courseSubject) return send(res, 404, { error: 'ویدیو در مسیر انتخاب‌شده پیدا نشد.' });
         item.status = body.status; item.reviewedBy = user.username; item.updatedAt = new Date().toISOString(); writeMediaStore(items);
         return send(res, 200, { media: item });
@@ -476,3 +483,4 @@ if (require.main === module) {
 }
 
 module.exports = handleRequest;
+
