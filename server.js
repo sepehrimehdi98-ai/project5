@@ -16,7 +16,9 @@ const DIST_ROOT = path.join(ROOT, 'dist');
 const PUBLIC_FILES = new Map([['/index.html', 'index.html'], ['/app.js', 'app.js'], ['/styles.css', 'styles.css']]);
 const MEDIA_FILE = path.join(ROOT, 'data', 'media.json');
 const PORT = Number(process.env.PORT || 3000);
-const MODEL = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b';
+const FREE_MODEL = 'nvidia/nemotron-3-ultra-550b-a55b:free';
+const configuredModel = process.env.OPENROUTER_MODEL || FREE_MODEL;
+const MODEL = configuredModel === 'nvidia/nemotron-3-ultra-550b-a55b' ? FREE_MODEL : configuredModel;
 const MAX_BODY = 1024 * 1024;
 const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.py': 'text/plain; charset=utf-8', '.wasm': 'application/wasm', '.zip': 'application/zip', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2' };
 
@@ -188,7 +190,7 @@ async function askAI(body) {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST', signal: controller.signal,
       headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', ...(process.env.OPENROUTER_HTTP_REFERER ? { 'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER } : {}), ...(process.env.OPENROUTER_APP_TITLE ? { 'X-Title': process.env.OPENROUTER_APP_TITLE } : {}) },
-      body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.35 : 0.25, ...(mode === 'teacher' ? { reasoning: { enabled: false } } : {}), max_tokens: mode === 'teacher' ? 1000 : mode === 'knowledge_twin' ? 1800 : 900 })
+      body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.35 : 0.25, reasoning: { enabled: false }, max_tokens: mode === 'teacher' ? 1000 : mode === 'knowledge_twin' ? 1800 : 900 })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
