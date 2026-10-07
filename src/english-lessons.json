@@ -1,0 +1,242 @@
+[
+  {
+    "id": "en-l1-1",
+    "level": "A1",
+    "title": "سلام و معرفی خود",
+    "duration": "۱۲ دقیقه",
+    "goal": "نام خود را بگویی و در یک گفت‌وگوی کوتاه با کسی آشنا شوی.",
+    "vocabulary": [
+      [
+        "hello / hi",
+        "سلام"
+      ],
+      [
+        "name",
+        "نام"
+      ],
+      [
+        "nice to meet you",
+        "از آشنایی با تو خوشحالم"
+      ],
+      [
+        "too",
+        "همچنین"
+      ],
+      [
+        "I’m",
+        "شکل کوتاه I am؛ من هستم"
+      ]
+    ],
+    "dialogue": [
+      {
+        "speaker": "A",
+        "persian": "سلام! اسمت چیست؟",
+        "english": "Hi! What’s your name?"
+      },
+      {
+        "speaker": "B",
+        "persian": "من نیلا هستم. از آشنایی با تو خوشحالم.",
+        "english": "I’m Nila. Nice to meet you."
+      },
+      {
+        "speaker": "A",
+        "persian": "من هم از آشنایی با تو خوشحالم.",
+        "english": "Nice to meet you too."
+      }
+    ],
+    "question": "پاسخ طبیعی به «Nice to meet you» کدام است؟",
+    "options": [
+      "Nice to meet you too.",
+      "I’m from Tehran.",
+      "My name is city.",
+      "Good night, yesterday."
+    ],
+    "correct": 0,
+    "feedback": "too در این پاسخ معنی «من هم» می‌دهد؛ پس جمله یعنی «من هم از آشنایی با تو خوشحالم».",
+    "practice": "نام خودت را جای Nila بگذار و دو جمله معرفی را با صدای بلند بگو."
+  },
+  {
+    "id": "en-l1-2",
+    "level": "A1",
+    "title": "گفتن شهر و کشور محل زندگی",
+    "duration": "۱۵ دقیقه",
+    "goal": "درباره محل زندگی بپرسی و با from یا live پاسخ بدهی.",
+    "vocabulary": [
+      [
+        "where",
+        "کجا"
+      ],
+      [
+        "from",
+        "اهلِ / از"
+      ],
+      [
+        "live",
+        "زندگی کردن"
+      ],
+      [
+        "city",
+        "شهر"
+      ],
+      [
+        "country",
+        "کشور"
+      ]
+    ],
+    "dialogue": [
+      {
+        "speaker": "A",
+        "persian": "اهل کجا هستی؟",
+        "english": "Where are you from?"
+      },
+      {
+        "speaker": "B",
+        "persian": "من اهل ایرانم.",
+        "english": "I’m from Iran."
+      },
+      {
+        "speaker": "A",
+        "persian": "کجا زندگی می‌کنی؟",
+        "english": "Where do you live?"
+      },
+      {
+        "speaker": "B",
+        "persian": "من در شیراز زندگی می‌کنم.",
+        "english": "I live in Shiraz."
+      }
+    ],
+    "question": "برای پاسخ به «Where do you live?» کدام جمله مناسب است؟",
+    "options": [
+      "I live in Shiraz.",
+      "I’m name Shiraz.",
+      "Where from you?",
+      "I am live Shiraz."
+    ],
+    "correct": 0,
+    "feedback": "برای گفتن محل زندگی از ساختار I live in + شهر استفاده می‌کنیم.",
+    "practice": "نام شهر خودت را بعد از in بگذار و یک بار با live و یک بار با from پاسخ بده."
+  },
+  {
+    "id": "en-l1-3",
+    "level": "A1",
+    "title": "برنامه روزانه",
+    "duration": "۱۸ دقیقه",
+    "goal": "سه کار روزانه را با فعل‌های ساده در زمان حال بیان کنی.",
+    "vocabulary": [
+      [
+        "get up",
+        "از خواب بیدار شدن"
+      ],
+      [
+        "have breakfast",
+        "صبحانه خوردن"
+      ],
+      [
+        "go to work",
+        "به محل کار رفتن"
+      ],
+      [
+        "usually",
+        "معمولاً"
+      ],
+      [
+        "every day",
+        "هر روز"
+      ]
+    ],
+    "dialogue": [
+      {
+        "speaker": "A",
+        "persian": "معمولاً چه ساعتی بیدار می‌شوی؟",
+        "english": "What time do you usually get up?"
+      },
+      {
+        "speaker": "B",
+        "persian": "من هر روز ساعت هفت بیدار می‌شوم.",
+        "english": "I get up at seven every day."
+      },
+      {
+        "speaker": "A",
+        "persian": "بعد از آن چه کار می‌کنی؟",
+        "english": "What do you do next?"
+      },
+      {
+        "speaker": "B",
+        "persian": "صبحانه می‌خورم و به محل کار می‌روم.",
+        "english": "I have breakfast and go to work."
+      }
+    ],
+    "question": "کدام جمله یک کار روزانه را درست بیان می‌کند؟",
+    "options": [
+      "I have breakfast at eight.",
+      "I breakfast have eight.",
+      "I am have breakfast.",
+      "I has breakfast."
+    ],
+    "correct": 0,
+    "feedback": "برای I از شکل پایه فعل استفاده می‌کنیم: I have breakfast.",
+    "practice": "دو کار روزانه خودت را با I و یک فعل ساده بنویس."
+  },
+  {
+    "id": "en-l1-4",
+    "level": "A1",
+    "title": "سفارش ساده در کافه",
+    "duration": "۱۶ دقیقه",
+    "goal": "یک نوشیدنی یا خوراکی را مؤدبانه سفارش بدهی و از فروشنده تشکر کنی.",
+    "vocabulary": [
+      [
+        "I’d like",
+        "مایلم / می‌خواهم"
+      ],
+      [
+        "water",
+        "آب"
+      ],
+      [
+        "tea",
+        "چای"
+      ],
+      [
+        "please",
+        "لطفاً"
+      ],
+      [
+        "thank you",
+        "ممنون"
+      ]
+    ],
+    "dialogue": [
+      {
+        "speaker": "A",
+        "persian": "سلام، چه میل دارید؟",
+        "english": "Hello. What would you like?"
+      },
+      {
+        "speaker": "B",
+        "persian": "یک چای می‌خواهم، لطفاً.",
+        "english": "I’d like a tea, please."
+      },
+      {
+        "speaker": "A",
+        "persian": "بفرمایید.",
+        "english": "Here you are."
+      },
+      {
+        "speaker": "B",
+        "persian": "ممنون.",
+        "english": "Thank you."
+      }
+    ],
+    "question": "کدام عبارت برای یک درخواست مؤدبانه مناسب است؟",
+    "options": [
+      "I’d like a tea, please.",
+      "Give tea now.",
+      "I am tea.",
+      "Tea where you?"
+    ],
+    "correct": 0,
+    "feedback": "I’d like یعنی «مایلم» و please درخواست را مؤدبانه‌تر می‌کند.",
+    "practice": "tea را با water یا یک خوراکی دیگر عوض کن و سفارش تازه‌ای بساز."
+  }
+]
+
