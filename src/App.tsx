@@ -12,6 +12,11 @@ type Page = StudentPage | TeacherPage | AdminPage;
 type BlockKind = "heading" | "text" | "code" | "video" | "quiz" | "note" | "ai";
 type Block = { id: number; kind: BlockKind; title: string; body: string; invalid?: boolean };
 
+function makeDemoUser(role: Role, subject: LearningPath): AuthUser {
+  const names: Record<Role, string> = { student: "نیلا احمدی · نمونه", teacher: "سارا محمودی · نمونه", admin: "مدیر دمو" };
+  return { id: `demo-${role}`, username: `demo-${role}`, name: names[role], role, courseSubject: subject, courseId: `demo-${subject}` };
+}
+
 async function requestApi<T = Record<string, unknown>>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(path, {
     method: body === undefined ? "GET" : "POST",
@@ -73,14 +78,12 @@ const teacherNav: { page: TeacherPage; label: string; icon: string }[] = [
   { page: "lesson-review", label: "بازبینی درس", icon: "eye" },
   { page: "students", label: "دانش‌آموزان", icon: "users" },
   { page: "reports", label: "گزارش‌ها", icon: "report" },
-  { page: "ai", label: "پیش‌نویس AI", icon: "spark" },
 ];
 const studentNav: { page: StudentPage; label: string; icon: string }[] = [
   { page: "student-home", label: "خانه من", icon: "home" },
   { page: "student-course", label: "دوره من", icon: "course" },
   { page: "student-lesson", label: "ادامه درس", icon: "play" },
   { page: "student-progress", label: "پیشرفت من", icon: "report" },
-  { page: "student-yar", label: "یارِ درس", icon: "spark" },
 ];
 const adminNav: { page: AdminPage; label: string; icon: string }[] = [
   { page: "admin-home", label: "نمای کلی", icon: "home" },
@@ -132,24 +135,9 @@ function Intro({ role, path, onDone }: { role: Role; path: LearningPath; onDone:
   </main>;
 }
 
-function Login({ onEnter, onDemo, demoAvailable, subject }: { onEnter: (role: Role, username: string, password: string, subject: LearningPath) => Promise<void>; onDemo: (role: Role, subject: LearningPath) => Promise<void>; demoAvailable: boolean; subject: LearningPath }) {
+function Login({ onDemo, subject }: { onDemo: (role: Role, subject: LearningPath) => void; subject: LearningPath }) {
   const [role, setRole] = useState<Role>("teacher");
-  const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const submit = async (e: FormEvent) => {
-    e.preventDefault(); setLoading(true); setError("");
-    try { await onEnter(role, username, password, subject); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "ورود ناموفق بود."); }
-    finally { setLoading(false); }
-  };
-  const demoLogin = async () => {
-    setLoading(true); setError("");
-    try { await onDemo(role, subject); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "ورود دمو ناموفق بود."); }
-    finally { setLoading(false); }
-  };
+  const roleName = role === "student" ? "دانش‌آموز" : role === "teacher" ? "مدرس" : "مدیر";
   return <main className="login" dir="rtl">
     <section className="login-visual">
       <NovaLogo variant="icon" className="animate-logo"/>
@@ -166,22 +154,20 @@ function Login({ onEnter, onDemo, demoAvailable, subject }: { onEnter: (role: Ro
       </div>
     </section>
     <section className="login-panel">
-      <form className="login-box" onSubmit={submit}>
+      <section className="login-box">
         <div className="mobile-logo"><NovaLogo variant="icon"/><b>Nova</b></div>
         <div className="login-code-motion" aria-label="نمونه کد پایتون" dir="ltr"><span>student = "Nila"</span><span>path = "Python"</span><span>print("Let’s learn!")<i/></span></div>
-        <span className="eyebrow">ورود به فضای کار · مسیر {role === "student" ? "دانش‌آموز" : role === "teacher" ? "مدرس" : "مدیر"}</span><h2>خوش آمدید</h2><p>با حساب کاربری خود وارد شوید.</p>
+        <span className="eyebrow">ورود به نسخه نمایشی · مسیر {roleName}</span><h2>محیط دمو را ببینید</h2><p>برای ورود به حساب نمونه، نقش موردنظر را انتخاب کنید. نام کاربری و گذرواژه لازم نیست.</p>
         <div className="role-switch" role="radiogroup" aria-label="انتخاب نقش">
           <button type="button" role="radio" aria-checked={role === "student"} className={role === "student" ? "active" : ""} onClick={() => setRole("student")}><Icon name="play"/><span><b>دانش‌آموز</b><small>یادگیری و تمرین</small></span></button>
           <button type="button" role="radio" aria-checked={role === "teacher"} className={role === "teacher" ? "active" : ""} onClick={() => setRole("teacher")}><Icon name="course"/><span><b>مدرس</b><small>مدیریت دوره و کلاس</small></span></button>
           <button type="button" role="radio" aria-checked={role === "admin"} className={role === "admin" ? "active" : ""} onClick={() => setRole("admin")}><Icon name="users"/><span><b>مدیر</b><small>کنترل سراسری سامانه</small></span></button>
         </div>
-        <label>نام کاربری<input dir="ltr" required value={username} onChange={e => setUsername(e.target.value)} placeholder={role === "student" ? "نام کاربری دانش‌آموز" : role === "teacher" ? "نام کاربری مدرس" : "نام کاربری مدیر"} autoComplete="username"/></label>
-        <label>گذرواژه<input dir="ltr" required type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="گذرواژه" autoComplete="current-password"/></label>
-        {error && <div className="notice" role="alert">{error}</div>}
-        <Button type="submit" disabled={loading}>{loading ? "در حال ورود…" : `ورود به پنل ${role === "student" ? "دانش‌آموز" : role === "teacher" ? "مدرس" : "مدیر"}`}</Button>
-        {demoAvailable && <><button type="button" className="demo-link" onClick={demoLogin} disabled={loading}>ورود مستقیم به نسخه نمایشی</button><small className="demo-note">حساب‌های دمو فقط در محیط محلی فعال‌اند.</small></>}
+        <div className="demo-access-note" role="note">این نسخه از اطلاعات نمونه در همین مرورگر استفاده می‌کند. ورود دمو دسترسی به کاربران یا داده‌های واقعی نمی‌دهد.</div>
+        <Button onClick={() => onDemo(role, subject)}>مشاهده پنل {roleName}</Button>
+        <small className="demo-note">نسخه نمایشی · بدون ساخت حساب و بدون ذخیره‌سازی اطلاعات واقعی</small>
         <div className="word-motion" aria-label="یادگیری زبان انگلیسی"><span><b>Hello</b><small>سلام</small></span><span><b>Learn</b><small>یاد بگیر</small></span><span><b>Speak</b><small>صحبت کن</small></span><i/><i/><i/></div>
-      </form>
+      </section>
     </section>
   </main>;
 }
@@ -236,7 +222,7 @@ function Courses({ go, path }: { go: (p: Page) => void; path: LearningPath }) {
 }
 
 const palette: { kind: BlockKind; label: string; icon: string }[] = [
-  {kind:"heading",label:"عنوان / زیرعنوان",icon:"course"},{kind:"text",label:"متن آموزشی",icon:"builder"},{kind:"code",label:"کد و مثال اجرایی",icon:"play"},{kind:"video",label:"ویدیو",icon:"media"},{kind:"quiz",label:"سؤال آزمون",icon:"report"},{kind:"note",label:"نکته / هشدار",icon:"bell"},{kind:"ai",label:"پیشنهاد AI",icon:"spark"},
+  {kind:"heading",label:"عنوان / زیرعنوان",icon:"course"},{kind:"text",label:"متن آموزشی",icon:"builder"},{kind:"code",label:"کد و مثال اجرایی",icon:"play"},{kind:"video",label:"ویدیو",icon:"media"},{kind:"quiz",label:"سؤال آزمون",icon:"report"},{kind:"note",label:"نکته / هشدار",icon:"bell"},
 ];
 const defaults: Record<BlockKind, [string,string]> = {
   heading:["متغیرها چیستند؟","عنوان بخش"], text:["متغیر را مثل یک جعبه نام‌دار در نظر بگیرید.","متن آموزشی را اینجا ویرایش کنید."], code:["مثال اجرایی",'name = "Nila"\nage = 14\nprint(name, age)'], video:["ویدیوی درس","برای بارگذاری ویدیو کلیک کنید."], quiz:["یک نام معتبر برای متغیر انتخاب کنید.","گزینه صحیح هنوز مشخص نشده است."], note:["نکته مهم","نام متغیر باید کوتاه و معنادار باشد."], ai:["پیشنهاد هوشمند","این محتوا پیش‌نویس است و پیش از افزودن باید بازبینی شود."],
@@ -249,7 +235,7 @@ function Builder({ go, path }: { go: (p: Page) => void; path: LearningPath }) {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed as Block[];
+        if (Array.isArray(parsed)) return (parsed as Block[]).filter(block => block.kind !== "ai");
       }
     } catch { /* Ignore stale or malformed local drafts. */ }
     if (path === "english") return [
@@ -432,8 +418,7 @@ function AdminTable({type}:{type:string}){const rows=type==="users"?[["نیلا 
 
 export default function App() {
   const [user,setUser]=useState<AuthUser|null>(null);
-  const [authChecked,setAuthChecked]=useState(false);
-  const [demoAvailable,setDemoAvailable]=useState(false);
+  const [authChecked,setAuthChecked]=useState(true);
   const [path,setPathState]=useState<LearningPath|null>(()=>{
     const saved=sessionStorage.getItem("nova-learning-path");
     return saved==="python"||saved==="english"?saved:null;
@@ -441,23 +426,25 @@ export default function App() {
   const [introDone,setIntroDone]=useState(false);
   const [page,setPage]=useState<Page>("dashboard");
   useEffect(()=>{
-    requestApi<{user:AuthUser|null}>("/api/auth/me").then(result=>{setUser(result.user);setIntroDone(result.user?localStorage.getItem(`nova-intro:${result.user.username}`)==="done":false)}).catch(()=>setUser(null)).finally(()=>setAuthChecked(true));
-    requestApi<{demoMode:boolean}>("/api/health").then(result=>setDemoAvailable(result.demoMode===true)).catch(()=>setDemoAvailable(false));
+    const saved=sessionStorage.getItem("nova-demo-role");
+    const subject=sessionStorage.getItem("nova-learning-path");
+    if((saved==="student"||saved==="teacher"||saved==="admin")&&(subject==="python"||subject==="english")){
+      const demoUser=makeDemoUser(saved,subject);
+      setUser(demoUser);
+      setPage(demoUser.role==="student"?"student-home":demoUser.role==="teacher"?"dashboard":"admin-home");
+      setIntroDone(localStorage.getItem(`nova-intro:${demoUser.username}`)==="done");
+    }
   },[]);
   useEffect(()=>{if(user?.courseSubject&&path!==user.courseSubject){sessionStorage.setItem("nova-learning-path",user.courseSubject);setPathState(user.courseSubject)}},[user,path]);
   const setPath=(selected:LearningPath)=>{if(user)return;sessionStorage.setItem("nova-learning-path",selected);setPathState(selected)};
-  const enter=async(selectedRole:Role,username:string,password:string,subject:LearningPath)=>{
-    const result=await requestApi<{user:AuthUser}>("/api/auth/login",{username,password,subject});
-    if(result.user.role!==selectedRole){await requestApi("/api/auth/logout",{});throw new Error(`این حساب متعلق به نقش «${result.user.role==="student"?"دانش‌آموز":result.user.role==="teacher"?"مدرس":"مدیر"}» است.`)}
-    setUser(result.user);setPage(result.user.role==="student"?"student-home":result.user.role==="teacher"?"dashboard":"admin-home");
-    setIntroDone(localStorage.getItem(`nova-intro:${result.user.username}`)==="done");
+  const enterDemo=(selectedRole:Role,subject:LearningPath)=>{
+    const demoUser=makeDemoUser(selectedRole,subject);
+    sessionStorage.setItem("nova-demo-role",selectedRole);
+    sessionStorage.setItem("nova-learning-path",subject);
+    setUser(demoUser);setPage(demoUser.role==="student"?"student-home":demoUser.role==="teacher"?"dashboard":"admin-home");
+    setIntroDone(localStorage.getItem(`nova-intro:${demoUser.username}`)==="done");
   };
-  const enterDemo=async(selectedRole:Role,subject:LearningPath)=>{
-    const result=await requestApi<{user:AuthUser}>("/api/auth/login",{demoRole:selectedRole,subject});
-    setUser(result.user);setPage(result.user.role==="student"?"student-home":result.user.role==="teacher"?"dashboard":"admin-home");
-    setIntroDone(localStorage.getItem(`nova-intro:${result.user.username}`)==="done");
-  };
-  const logout=async()=>{try{await requestApi("/api/auth/logout",{})}finally{setUser(null);setIntroDone(false);sessionStorage.removeItem("nova-learning-path");setPathState(null)}};
+  const logout=()=>{setUser(null);setIntroDone(false);sessionStorage.removeItem("nova-demo-role");sessionStorage.removeItem("nova-learning-path");setPathState(null)};
   const activePath=user?.courseSubject??path??"python";
   const content=useMemo(()=>{
     if(page==="student-home")return <StudentHome go={setPage} path={activePath}/>;
@@ -479,8 +466,9 @@ export default function App() {
   },[page,activePath,user]);
   if(!authChecked)return <main dir="rtl" style={{minHeight:"100vh",display:"grid",placeItems:"center"}}>در حال اتصال امن…</main>;
   if(!user&&!path)return <PathSelect role={null} onSelect={setPath}/>;
-  if(!user)return <Login onEnter={enter} onDemo={enterDemo} demoAvailable={demoAvailable} subject={activePath}/>;
+  if(!user)return <Login onDemo={enterDemo} subject={activePath}/>;
   const role=user.role;
   if(!introDone)return <Intro role={role} path={activePath} onDone={()=>{localStorage.setItem(`nova-intro:${user.username}`,"done");setIntroDone(true)}}/>;
   return <Shell role={role} path={activePath} page={page} setPage={setPage} onLogout={()=>{void logout()}} user={user}>{content}</Shell>;
 }
+
