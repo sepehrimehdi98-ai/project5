@@ -181,7 +181,7 @@ async function askAI(body) {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST', signal: controller.signal,
       headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', ...(process.env.OPENROUTER_HTTP_REFERER ? { 'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER } : {}), ...(process.env.OPENROUTER_APP_TITLE ? { 'X-Title': process.env.OPENROUTER_APP_TITLE } : {}) },
-      body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.6 : 0.25, max_tokens: mode === 'teacher' ? 4200 : mode === 'knowledge_twin' ? 1800 : 900 })
+      body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.6 : 0.25, max_tokens: mode === 'teacher' ? 1800 : mode === 'knowledge_twin' ? 1800 : 900 })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
