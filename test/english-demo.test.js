@@ -38,6 +38,7 @@ test('all AI roles disable hidden reasoning and default to the selected free mod
   assert.match(server, /mode === 'teacher' \? 1000/);
   assert.match(server, /const FREE_MODEL = 'nvidia\/nemotron-3-ultra-550b-a55b:free'/);
   assert.match(server, /configuredModel === 'nvidia\/nemotron-3-ultra-550b-a55b' \? FREE_MODEL/);
+  assert.match(server, /provider: \{ allow_fallbacks: true, sort: 'throughput' \}/);
   assert.match(server, /attempt < 2/);
   assert.match(server, /deadline - Date\.now\(\) > 12_000/);
 });
