@@ -32,10 +32,12 @@ test('English lesson creator gets language blocks and is instructed never to use
   assert.doesNotMatch(prompt, /print\s*\(/);
 });
 
-test('teacher AI disables hidden reasoning so its free-model completion can fit the Vercel window', () => {
+test('all AI roles disable hidden reasoning and default to the selected free model', () => {
   const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-  assert.match(server, /mode === 'teacher' \? \{ reasoning: \{ enabled: false \} \}/);
+  assert.match(server, /reasoning: \{ enabled: false \}/);
   assert.match(server, /mode === 'teacher' \? 1000/);
+  assert.match(server, /const FREE_MODEL = 'nvidia\/nemotron-3-ultra-550b-a55b:free'/);
+  assert.match(server, /configuredModel === 'nvidia\/nemotron-3-ultra-550b-a55b' \? FREE_MODEL/);
 });
 
 test('builder offers a type picker, video upload, and browser demo publishing', () => {
