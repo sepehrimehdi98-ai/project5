@@ -6,6 +6,7 @@ const { query } = require('./lib/database');
 const mediaStorage = require('./lib/media-storage');
 const { isDemoMode, getDemoSessionSecret } = require('./lib/demo-auth');
 const { buildAIPrompt } = require('./lib/course-adapters');
+const ENGLISH_LESSONS = require('./src/english-lessons.json');
 
 loadEnv();
 enforceRuntimeSafety();
@@ -24,7 +25,13 @@ function loadEnv() {
   if (!fs.existsSync(file)) return;
   for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
     const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
-    if (!match || match[1] in process.env) continue;
+    if (!match) continue;
+    if (match[1] in process.env) {
+      // Keep the explicitly selected free OpenRouter slug when an old process
+      // environment still contains the paid base slug from an earlier setup.
+      if (match[1] === 'OPENROUTER_MODEL' && match[2].endsWith(':free') && process.env.OPENROUTER_MODEL === match[2].slice(0, -5)) process.env.OPENROUTER_MODEL = match[2];
+      continue;
+    }
     let value = match[2];
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
     process.env[match[1]] = value;
@@ -181,7 +188,7 @@ async function askAI(body) {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST', signal: controller.signal,
       headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', ...(process.env.OPENROUTER_HTTP_REFERER ? { 'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER } : {}), ...(process.env.OPENROUTER_APP_TITLE ? { 'X-Title': process.env.OPENROUTER_APP_TITLE } : {}) },
-      body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.6 : 0.25, max_tokens: mode === 'teacher' ? 1800 : mode === 'knowledge_twin' ? 1800 : 900 })
+      body: JSON.stringify({ model: MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }], temperature: mode === 'teacher' ? 0.35 : 0.25, ...(mode === 'teacher' ? { reasoning: { enabled: false } } : {}), max_tokens: mode === 'teacher' ? 1000 : mode === 'knowledge_twin' ? 1800 : 900 })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -200,7 +207,11 @@ async function askAI(body) {
       throw Object.assign(new Error(message), { status: response.status === 429 ? 429 : 502 });
     }
     const answer = payload.choices?.[0]?.message?.content;
-    if (typeof answer !== 'string' || !answer.trim()) throw Object.assign(new Error('پاسخ خالی از سرویس AI دریافت شد.'), { status: 502 });
+    if (typeof answer !== 'string' || !answer.trim()) {
+      const choice = payload.choices?.[0];
+      console.error('OpenRouter returned no user-facing text:', JSON.stringify({ finish_reason: choice?.finish_reason, refusal: Boolean(choice?.message?.refusal), reasoning_tokens: payload.usage?.completion_tokens_details?.reasoning_tokens }));
+      throw Object.assign(new Error('سرویس AI پاسخ متنی برنگرداند. یک بار دیگر تلاش کنید؛ اگر تکرار شد، مدل رایگان OpenRouter ممکن است موقتاً شلوغ باشد.'), { status: 502 });
+    }
     if (mode === 'tutor') return answer.trim().replace(/(?:^|\n)Progress:\s*.*$/gim, '').trim();
     if (mode === 'knowledge_twin') {
       let twin;
@@ -230,11 +241,15 @@ async function askAI(body) {
 }
 
 function demoLesson(subject, lessonKey) {
-  const lessons = {
-    python: { key: 'l2-1', title: 'متغیرها و انواع داده', content: 'هدف درس: مقدارهای متنی و عددی را در متغیر ذخیره و دوباره استفاده کن. مثال درس: name = "Nila" و age = 14؛ print(name, age) مقدارها را نشان می‌دهد. تمرین: یک متغیر برای نام شهر بساز و آن را چاپ کن.', course: 'پایتون از پایه', level: 'مقدماتی', guidance: 'از تشبیه ساده جعبه نام‌دار استفاده کن. ابتدا تفاوت متن و عدد را با مثال همین درس روشن کن. دانش‌آموز را وادار نکن کد حفظ کند؛ قدم‌به‌قدم توضیح بده و برای خطا یک راهنمایی بده.', sources: [] },
-    english: { key: 'en-l1-1', title: 'معرفی خود در یک گفت‌وگوی کوتاه', content: 'هدف درس A1: زبان‌آموز بتواند نام و شهر محل زندگی خود را معرفی کند و به پرسش ساده پاسخ دهد. واژگان: hello = سلام، name = نام، city = شهر، from = اهلِ. نمونه: ترجمه فارسی: سلام، من نیلا هستم و اهل تهرانم.\nEnglish: Hello, I’m Nila. I’m from Tehran. گفت‌وگو: A: What’s your name? B: I’m Nila. A: Where are you from? B: I’m from Tehran. تمرین: نام و شهر خودت را جایگزین کن.', course: 'انگلیسی از پایه · A1', level: 'A1', guidance: 'برای زبان‌آموز فارسی‌زبان سطح A1 جمله‌ها را کوتاه نگه دار. در هر مثال ترجمه طبیعی فارسی را پیش از جمله انگلیسی بنویس. تفاوت پرسش What’s your name? و Where are you from? را با تمرین گفت‌وگویی بسنج؛ هیچ کد یا مثال پایتون نده.', sources: [] },
-  };
-  const lesson = lessons[subject];
+  const python = { key: 'l2-1', title: 'متغیرها و انواع داده', content: 'هدف درس: مقدارهای متنی و عددی را در متغیر ذخیره و دوباره استفاده کن. مثال درس: name = "Nila" و age = 14؛ print(name, age) مقدارها را نشان می‌دهد. تمرین: یک متغیر برای نام شهر بساز و آن را چاپ کن.', course: 'پایتون از پایه', level: 'مقدماتی', guidance: 'از تشبیه ساده جعبه نام‌دار استفاده کن. ابتدا تفاوت متن و عدد را با مثال همین درس روشن کن. دانش‌آموز را وادار نکن کد حفظ کند؛ قدم‌به‌قدم توضیح بده و برای خطا یک راهنمایی بده.', sources: [] };
+  const english = ENGLISH_LESSONS.map((item) => ({
+    key: item.id,
+    title: item.title,
+    content: [`هدف درس: ${item.goal}`, `واژگان: ${item.vocabulary.map(([word, meaning]) => `${word} = ${meaning}`).join('، ')}`, `نمونه گفت‌وگو: ${item.dialogue.map(line => `${line.speaker}: ${line.english} (${line.persian})`).join(' ')}`, `تمرین: ${item.practice}`, `پرسش: ${item.question} گزینه‌ها: ${item.options.join(' | ')}`].join('\n'),
+    course: 'انگلیسی از پایه · A1', level: item.level,
+    guidance: 'برای زبان‌آموز فارسی‌زبان سطح A1 جمله‌ها را کوتاه نگه دار. هر مثال انگلیسی را با ترجمه طبیعی فارسی همراه کن. از واژگان، گفت‌وگو و تمرین همین درس استفاده کن؛ هیچ کد یا مثال پایتون نده.', sources: []
+  }));
+  const lesson = subject === 'python' ? python : english.find(item => item.key === lessonKey) || english[0];
   if (lessonKey && lesson.key !== lessonKey) throw Object.assign(new Error('این درس به مسیر آموزشی قفل‌شده این نشست تعلق ندارد.'), { status: 403 });
   return lesson;
 }
@@ -304,8 +319,8 @@ async function loadAICourseContext(user, body) {
 async function resolveScopedLesson(user, lessonKey) {
   if (!/^[A-Za-z0-9_-]{1,120}$/.test(String(lessonKey || ''))) throw Object.assign(new Error('A valid lesson key is required.'), { status: 400 });
   if (isDemoMode()) {
-    const expected = user.courseSubject === 'python' ? 'l2-1' : 'en-l1-1';
-    if (lessonKey !== expected) throw Object.assign(new Error('This lesson does not belong to the selected course.'), { status: 403 });
+    const valid = user.courseSubject === 'python' ? lessonKey === 'l2-1' : ENGLISH_LESSONS.some(item => item.id === lessonKey);
+    if (!valid) throw Object.assign(new Error('This lesson does not belong to the selected course.'), { status: 403 });
     return { id: null, externalKey: lessonKey };
   }
   const result = await query('SELECT id, external_key AS "externalKey" FROM lessons WHERE course_id = $1 AND external_key = $2', [user.courseId, lessonKey]);
