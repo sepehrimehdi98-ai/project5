@@ -340,79 +340,80 @@ function Upload({go,path}:{go:(p:Page)=>void;path:LearningPath}) {
   return <div className="page narrow"><button className="back-link" onClick={()=>go("builder")}><Icon name="back"/> بازگشت به سازنده</button><MediaUploader path={path}/></div>;
 }
 
+type PreparedQuestion={id:string;label:string;question:string};
+const preparedLessonQuestions:Record<LearningPath,PreparedQuestion[]>={
+  python:[
+    {id:"explain",label:"توضیح مفهوم و مثال",question:"این موضوع را ساده توضیح بده و یک مثال قابل اجرا نشان بده."},
+    {id:"practice",label:"ساخت تمرین و پاسخ",question:"یک تمرین مرحله‌ای با راهنمای پاسخ برای این موضوع آماده کن."},
+    {id:"quiz",label:"پرسش‌های آزمون",question:"سه پرسش چهارگزینه‌ای با پاسخ درست و دلیل کوتاه بساز."},
+  ],
+  english:[
+    {id:"dialogue",label:"گفت‌وگوی کوتاه",question:"برای این موضوع یک گفت‌وگوی کوتاه سطح A1 آماده کن."},
+    {id:"vocabulary",label:"واژگان و مثال",question:"واژگان مهم این موضوع را با مثال و ترجمه فارسی آموزش بده."},
+    {id:"quiz",label:"تمرین و پرسش آزمون",question:"یک تمرین کوتاه و سه پرسش چهارگزینه‌ای آماده کن."},
+  ],
+};
+function buildPreparedLessonAnswer(path:LearningPath,id:string,subject:string,lessonTitle:string,resources:string){
+  const topic=subject.trim()||lessonTitle;
+  const source=resources.trim()?`\n\nمنبع یا راهنمای مدرس\n${resources.trim()}`:"";
+  if(path==="english"){
+    const answers:Record<string,string>={
+      dialogue:`هدف درس\nزبان‌آموز بتواند درباره «${topic}» یک گفت‌وگوی ساده در سطح A1 انجام دهد.\n\nنمونه گفت‌وگو\nترجمه فارسی: سلام، اسم من سارا است. اسم شما چیست؟\nEnglish: Hi, I’m Sara. What’s your name?\n\nترجمه فارسی: من علی هستم. از دیدنت خوشحالم.\nEnglish: I’m Ali. Nice to meet you.\n\nتمرین\nنام‌ها را عوض کنید و گفت‌وگو را با یک هم‌کلاسی دو بار تمرین کنید. بار دوم، بدون نگاه کردن به متن پاسخ دهید.\n\nپرسش بررسی یادگیری\nبرای پرسیدن نام طرف مقابل از کدام جمله استفاده می‌کنیم؟ پاسخ: What’s your name?${source}`,
+      vocabulary:`هدف درس\nزبان‌آموز واژه‌های مرتبط با «${topic}» را در یک جمله ساده به کار ببرد.\n\nنمونه واژگان\nترجمه فارسی: کتاب\nEnglish: book\n\nترجمه فارسی: من یک کتاب دارم.\nEnglish: I have a book.\n\nتوضیح\nدر جمله I have a book، واژه book چیزی را نام می‌برد و have نشان می‌دهد که گوینده آن را دارد.\n\nتمرین\nیک واژه از درس را انتخاب کنید و با الگوی I have a … جمله بسازید.\n\nپرسش بررسی یادگیری\nدر جمله I have a book، کدام واژه به معنی «کتاب» است؟ پاسخ: book.${source}`,
+      quiz:`هدف درس\nبررسی کاربرد آموخته‌ها درباره «${topic}».\n\nتمرین کوتاه\nجمله را کامل کنید: “I ___ a student.”\nپاسخ: am؛ چون برای I از am استفاده می‌کنیم.\n\nپرسش‌های آزمون\n۱. معنی “What’s your name?” چیست؟ پاسخ: اسم شما چیست؟\n۲. جای خالی را کامل کنید: “I ___ Ali.” پاسخ: am.\n۳. کدام عبارت برای خداحافظی مناسب است؟ پاسخ: Goodbye.\n\nگام بعدی\nاز زبان‌آموز بخواهید پاسخ‌ها را با صدای بلند بگوید و برای هر پاسخ یک جمله تازه بسازد.${source}`
+    };
+    return answers[id]||answers.dialogue;
+  }
+  const answers:Record<string,string>={
+    explain:`هدف یادگیری\nدانش‌آموز مفهوم «${topic}» را توضیح دهد و آن را در یک مثال ساده به کار ببرد.\n\nتوضیح\nمتغیر را مثل جعبه‌ای نام‌دار در نظر بگیر: یک مقدار را با علامت = داخل آن می‌گذاریم و بعد می‌توانیم از همان مقدار استفاده کنیم.\n\nمثال پایتون\n\`\`\`python\n${topic.toLowerCase().includes("لیست")?"scores = [18, 20]\nprint(scores)":"name = \"Sara\"\nprint(name)"}\n\`\`\`\nخروجی دقیق\n\`\`\`text\n${topic.toLowerCase().includes("لیست")?"[18, 20]":"Sara"}\n\`\`\`\n\nتمرین\nیک متغیر به نام city بساز، نام شهر خودت را در آن قرار بده و با print نمایش بده.\n\nپرسش بررسی یادگیری\nعلامت = در این مثال چه کاری انجام می‌دهد؟ پاسخ: مقدار سمت راست را در متغیر سمت چپ قرار می‌دهد.${source}`,
+    practice:`تمرین: موضوع «${topic}»\n\nکار\nمتغیری به نام score بساز، عدد ۲۰ را در آن ذخیره کن و مقدارش را نمایش بده.\n\nراهنمای گام‌به‌گام\n۱. نام متغیر را بنویس: score\n۲. برای مقداردهی از = استفاده کن.\n۳. برای نمایش مقدار از print() استفاده کن.\n\nپاسخ نمونه\n\`\`\`python\nscore = 20\nprint(score)\n\`\`\`\nخروجی دقیق\n\`\`\`text\n20\n\`\`\`\n\nبررسی\nاگر خروجی 20 باشد، مقدار به‌درستی ذخیره و نمایش داده شده است.${source}`,
+    quiz:`آزمون کوتاه: ${topic}\n\n۱. کدام خط مقدار ۱۰ را در x ذخیره می‌کند؟\nالف) x = 10  ب) 10 = x  ج) print x\nپاسخ: الف؛ در پایتون متغیر در سمت چپ و مقدار در سمت راست قرار می‌گیرد.\n\n۲. کدام دستور مقدار x را نمایش می‌دهد؟\nالف) show(x)  ب) print(x)  ج) output x\nپاسخ: ب؛ print() مقدار را چاپ می‌کند.\n\n۳. خروجی این کد چیست؟\n\`\`\`python\nx = 4\nprint(x)\n\`\`\`\nپاسخ: 4؛ چون عدد ۴ در x ذخیره شده است.\n\nپیشنهاد مدرس\nاز دانش‌آموز بخواهید پاسخ پرسش سوم را با تغییر مقدار x دوباره پیش‌بینی و بررسی کند.${source}`
+  };
+  return answers[id]||answers.explain;
+}
 function AIDraft({ go, path }: { go:(p:Page)=>void;path:LearningPath }) {
   const [targetLessonId,setTargetLessonId]=useState(()=>path==="english"?getEnglishLesson(localStorage.getItem("nova-selected-english-lesson")||undefined).id:"l2-1");
   const targetLesson=path==="english"?getEnglishLesson(targetLessonId):undefined;
-  const [prompt,setPrompt]=useState(()=>path==="python"?"برای درس متغیرها، یک توضیح ساده، مثال کد با خروجی، تمرین و سه پرسش چهارگزینه‌ای بساز.":`برای درس «${getEnglishLesson(localStorage.getItem("nova-selected-english-lesson")||undefined).title}»، یک گفت‌وگوی سطح A1 با ترجمه فارسی، تمرین و سه پرسش چهارگزینه‌ای بساز.`);
-  const [title,setTitle]=useState("");const [state,setState]=useState<"empty"|"loading"|"ready"|"saved">("empty");const [draft,setDraft]=useState("");const [source,setSource]=useState<AISource>();const [error,setError]=useState("");const [isSample,setIsSample]=useState(false);
-  const examples=path==="english"?[
-    {label:"گفت‌وگوی معرفی خود",prompt:"برای درس سلام و معرفی خود در سطح A1، گفت‌وگوی چهارخطی بساز؛ هر جمله را اول به فارسی و خط بعد به انگلیسی بنویس. چهار واژه کلیدی، یک تمرین گفتاری و سه سؤال چهارگزینه‌ای با پاسخ و دلیل کوتاه پیشنهاد بده."},
-    {label:"واژگان برنامه روزانه",prompt:"برای درس برنامه روزانه سطح A1، پنج فعل پرکاربرد را با معنی فارسی آموزش بده. برای هر فعل جمله انگلیسی و ترجمه فارسی بنویس، یک تمرین جای‌خالی و سه سؤال چهارگزینه‌ای بساز."},
-    {label:"تمرین مکالمه در کافه",prompt:"برای درس سفارش ساده در کافه سطح A1، گفت‌وگوی مشتری و فروشنده بنویس. قبل از هر جمله انگلیسی ترجمه فارسی آن را بگذار، عبارت‌های مؤدبانه را توضیح بده و تمرین نقش‌آفرینی و سه سؤال چهارگزینه‌ای اضافه کن."},
-  ]:[
-    {label:"توضیح مفهوم",prompt:"برای درس متغیرها، مفهوم را با تشبیه ساده توضیح بده؛ یک مثال پایتون با خروجی دقیق، تمرین مرحله‌ای و سه سؤال چهارگزینه‌ای با پاسخ و دلیل بساز."},
-    {label:"تمرین کدنویسی",prompt:"برای درس متغیرها، یک تمرین کوتاه پایتون با کد آغازین، خروجی مورد انتظار و راهنمای گام‌به‌گام مدرس بساز. سه سؤال چهارگزینه‌ای هم اضافه کن."},
-    {label:"رفع یک اشتباه رایج",prompt:"برای درس متغیرها، یک اشتباه رایج دانش‌آموز را نشان بده، کد نادرست و نسخه درست را توضیح بده، یک تمرین اصلاح کد و سه سؤال چهارگزینه‌ای بساز."},
-  ];
-  const sampleTitle=path==="english"?"معرفی خود به انگلیسی · A1":"متغیرها و مقدارها";
-  const sampleDraft=path==="english"?`هدف یادگیری
-زبان‌آموز بتواند نام خود را با یک جمله کوتاه معرفی کند.
-
-توضیح درس
-برای معرفی نام از الگوی “I’m …” استفاده می‌کنیم. واژه I یعنی «من» و ’m شکل کوتاه am است.
-
-نمونه
-ترجمه فارسی: سلام، من سارا هستم.
-English: Hi, I’m Sara.
-این جمله برای شروع یک معرفی کوتاه مناسب است.
-
-تمرین
-نام خودت را جای Sara بگذار و جمله را با صدای بلند بگو.
-
-پرسش‌های آزمون
-۱. کدام جمله یعنی «من سارا هستم»؟ الف) I’m Sara. ب) You Sara. ج) My Sara. د) I Sara am. پاسخ: الف؛ الگوی درس I’m + name است.
-۲. معنی I چیست؟ الف) او ب) من ج) شما د) آنها. پاسخ: ب.
-۳. جای خالی را کامل کن: “Hi, ___ Sara.” الف) I’m ب) from ج) live د) are. پاسخ: الف.
-
-پیشنهاد بلوک‌ها
-عنوان درس → توضیح فارسی → واژگان → جمله نمونه با ترجمه → گفت‌وگو → تمرین زبان → ویدیوی شنیداری.`:`هدف یادگیری
-دانش‌آموز بتواند یک مقدار را در متغیر ذخیره کند و آن را چاپ کند.
-
-توضیح ساده
-متغیر مثل جعبه‌ای نام‌دار است. مقدار را با علامت = داخل آن می‌گذاریم.
-
-مثال پایتون
-\`\`\`python
-name = "Sara"
-print(name)
-\`\`\`
-خروجی دقیق
-\`\`\`text
-Sara
-\`\`\`
-خط اول متن Sara را در متغیر name ذخیره می‌کند؛ خط دوم همان مقدار را چاپ می‌کند.
-
-تمرین
-متغیر city را با نام شهر خودت بساز و با print نمایش بده.
-
-پرسش‌های آزمون
-۱. کدام دستور مقدار را در name می‌گذارد؟ الف) name = "Sara" ب) print name ج) = name د) name ==. پاسخ: الف؛ علامت = مقداردهی می‌کند.
-۲. برای نمایش مقدار کدام تابع را به کار می‌بریم؟ الف) show ب) print() ج) write() د) input(). پاسخ: ب.
-۳. خروجی print(7) چیست؟ الف) 7 ب) print ج) خالی د) خطا. پاسخ: الف.
-
-پیشنهاد بلوک‌ها
-عنوان درس → توضیح → کد و خروجی → نکته → تمرین → آزمون.`;
-  const showSample=()=>{setTitle(sampleTitle);setDraft(sampleDraft);setSource(undefined);setIsSample(true);setError("");setState("ready")};
-  const generate=async()=>{if(!prompt.trim())return;setState("loading");setError("");setIsSample(false);try{const result=await requestApi<{answer:string;source:AISource}>("/api/ai",{mode:"teacher",topic:prompt,level:targetLesson?.level||"مقدماتی",subject:path,lessonId:targetLessonId});setTitle(prompt.slice(0,100));setDraft(result.answer);setSource(result.source);setState("ready")}catch(reason){setError(reason instanceof Error?reason.message:"ساخت پیش‌نویس ناموفق بود.");setState("empty")}};
-  const saveDraft=()=>{const key=`nova-drafts:${path}`,saved=JSON.parse(localStorage.getItem(key)||"[]");saved.unshift({id:Date.now(),title,content:draft,createdAt:new Date().toISOString(),status:"draft"});localStorage.setItem(key,JSON.stringify(saved));setState("saved")};
+  const lessonTitle=targetLesson?.title||(path==="python"?"متغیرها و مقدارها":"درس انتخاب‌شده");
+  const [subject,setSubject]=useState(lessonTitle);
+  const [resources,setResources]=useState("");
+  const questions=preparedLessonQuestions[path];
+  const [selectedQuestion,setSelectedQuestion]=useState(questions[0].id);
+  const [title,setTitle]=useState(path==="english"?"گفت‌وگوی ساده · A1":"متغیرها و مقدارها");
+  const [draft,setDraft]=useState(()=>buildPreparedLessonAnswer(path,questions[0].id,lessonTitle,lessonTitle,""));
+  const [saved,setSaved]=useState(false);
+  const chooseQuestion=(question:PreparedQuestion)=>{
+    setSelectedQuestion(question.id);
+    setTitle(path==="english"?`${question.label} · A1`:question.label);
+    setDraft(buildPreparedLessonAnswer(path,question.id,subject,lessonTitle,resources));
+    setSaved(false);
+  };
+  const refreshAnswer=()=>{setDraft(buildPreparedLessonAnswer(path,selectedQuestion,subject,lessonTitle,resources));setSaved(false)};
+  const saveDraft=()=>{const key=`nova-drafts:${path}`,items=JSON.parse(localStorage.getItem(key)||"[]");items.unshift({id:Date.now(),title,content:draft,subject,resources,question:questions.find(item=>item.id===selectedQuestion)?.question,createdAt:new Date().toISOString(),status:"draft"});localStorage.setItem(key,JSON.stringify(items));setSaved(true)};
   const addDraftToCanvas=()=>{saveDraft();localStorage.setItem(`nova-ai-insert:${path}`,JSON.stringify({title,content:draft}));go("builder")};
-  return <div className="page ai-page"><section className="ai-request"><div className="ai-title"><span><Icon name="spark"/></span><div><h2>یک پیش‌نویس بسازیم</h2><p>یک درخواست آماده را انتخاب کنید یا متن خودتان را بنویسید. پیش‌نویس را می‌توانید قبل از افزودن به درس ویرایش کنید.</p></div></div>{path==="english"&&<label>درس مرجع<select value={targetLessonId} onChange={event=>{setTargetLessonId(event.target.value);localStorage.setItem("nova-selected-english-lesson",event.target.value);setPrompt(`برای درس «${getEnglishLesson(event.target.value).title}»، یک فعالیت سطح A1 با مثال انگلیسی و ترجمه فارسی و سه پرسش چهارگزینه‌ای بساز.`)}}>{englishLessons.map(lesson=><option value={lesson.id} key={lesson.id}>{lesson.level} · {lesson.title}</option>)}</select></label>}<label>درخواست شما<textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder={path==="python"?"مثلاً: یک توضیح ساده درباره متغیر برای دانش‌آموز ۱۴ ساله بنویس…":`مثلاً: برای درس «${targetLesson?.title}» یک تمرین گفت‌وگو و سه پرسش چهارگزینه‌ای بساز…`}/></label><div className="prompt-examples"><b>نمونه درخواست‌های آماده</b><div className="prompt-chips">{examples.map(item=><button type="button" onClick={()=>setPrompt(item.prompt)} key={item.label}>{item.label}</button>)}</div><div className="prompt-output-example"><b>نمونه قالب پاسخ</b><p>{path==="english"?"هدف درس → ترجمه فارسی → جمله انگلیسی → تمرین کوتاه → سه پرسش آزمون":"هدف درس → توضیح ساده → کد → خروجی دقیق → تمرین → سه پرسش آزمون"}</p></div></div><Button icon="spark" onClick={()=>void generate()} disabled={!prompt.trim()||state==="loading"}>{state==="loading"?"در حال آماده‌سازی پیش‌نویس…":"ساخت پیش‌نویس با AI"}</Button>{error&&<div className="notice" role="alert">{error}<button className="text-btn" onClick={()=>void generate()}>تلاش دوباره</button></div>}</section>
-    <section className="ai-preview"><div className="panel-head"><div><span className="eyebrow">پیشنهاد قابل ویرایش</span><h2>پیش‌نمایش پیش‌نویس</h2></div>{state==="ready"&&<Badge tone="purple">تولیدشده با AI</Badge>}</div>
-      {state==="empty"&&<div className="empty"><Icon name="spark" size={32}/><h3>هنوز پیش‌نویسی ساخته نشده</h3><p>درخواست را ویرایش کنید و «ساخت پیش‌نویس با AI» را بزنید. برای دیدن قالب، نمونه آماده را باز کنید.</p><Button tone="secondary" onClick={showSample}>نمایش نمونه پاسخ قابل ویرایش</Button></div>}
-      {state==="loading"&&<div className="ai-loading"><span><Icon name="spark"/></span><b>در حال آماده‌سازی پیش‌نویس…</b><p>ساختار و زبان محتوا در حال تنظیم است.</p><div><i/><i/><i/></div></div>}
-      {(state==="ready"||state==="saved")&&<><div className="ai-warning">{isSample?"این فقط نمونه آموزشی برای دیدن قالب ویرایش است؛ خروجی مدل AI نیست.":"این محتوا پیشنهادی است و بدون تصمیم شما منتشر نمی‌شود."}</div><label>عنوان<input value={title} onChange={e=>setTitle(e.target.value)}/></label><label>متن پیشنهادی<textarea value={draft} onChange={e=>setDraft(e.target.value)}/></label><AIAnswer text={draft} subject={path} source={source}/>{state==="saved"&&<div className="success-message"><Icon name="check"/> پیش‌نویس در این مرورگر ذخیره شد؛ هنوز به پایگاه داده یا درس منتشرشده اضافه نشده است.</div>}<div className="form-actions"><Button tone="secondary" onClick={saveDraft}>ذخیره پیش‌نویس</Button><Button onClick={addDraftToCanvas}>افزودن به بوم درس</Button></div></>}
-    </section></div>;
+  return <div className="page ai-page lesson-creator-page">
+    <section className="ai-request lesson-creator-controls">
+      <div className="ai-title"><span><Icon name="spark"/></span><div><h2>سازنده سریع درس</h2><p>موضوع و منابع را وارد کنید، سپس یکی از درخواست‌های آماده را بزنید. پاسخ همین‌جا و فوری نمایش داده می‌شود و قابل ویرایش است.</p></div></div>
+      <div className="creator-fields">
+        <label>موضوع درس<input className="creator-subject" value={subject} onChange={event=>setSubject(event.target.value)} placeholder={path==="english"?"مثلاً: معرفی خود":"مثلاً: متغیرها"}/></label>
+        {path==="english"&&<label>درس مرجع<select value={targetLessonId} onChange={event=>{const id=event.target.value;setTargetLessonId(id);localStorage.setItem("nova-selected-english-lesson",id);setSubject(getEnglishLesson(id).title)}}>{englishLessons.map(lesson=><option value={lesson.id} key={lesson.id}>{lesson.level} · {lesson.title}</option>)}</select></label>}
+        <label>منابع و راهنمای مدرس<textarea className="resource-input" value={resources} onChange={event=>setResources(event.target.value)} placeholder="نکته‌های کلاس، منبع کتاب، پیوند یا توضیحی که باید در پیش‌نویس لحاظ شود…"/></label>
+      </div>
+      <div className="prepared-question-list"><div className="prepared-question-heading"><div><b>درخواست‌های آماده</b><small>برای نمایش پاسخ نمونه، یکی را انتخاب کنید.</small></div><Badge tone="gray">بدون انتظار</Badge></div>
+        {questions.map((question,index)=><button type="button" key={question.id} className={`prepared-question${selectedQuestion===question.id?" active":""}`} onClick={()=>chooseQuestion(question)}><span>{String(index+1).padStart(2,"0")}</span><div><b>{question.label}</b><small>{question.question}</small></div><Icon name="back" size={15}/></button>)}
+      </div>
+      <Button icon="spark" onClick={refreshAnswer}>نمایش پاسخ آماده با اطلاعات فعلی</Button>
+      <p className="creator-demo-note">این بخش برای دموی سریع از پاسخ‌های ازپیش‌نوشته‌شده استفاده می‌کند و به سرویس AI درخواست نمی‌فرستد. سایر دستیارها و اتصال‌های بک‌اند تغییری نکرده‌اند.</p>
+    </section>
+    <section className="ai-preview lesson-creator-preview"><div className="panel-head"><div><span className="eyebrow">پاسخ آماده · قابل ویرایش</span><h2>پیش‌نویس درس</h2></div><Badge tone="green">فوری</Badge></div>
+      <label>عنوان<input value={title} onChange={event=>setTitle(event.target.value)}/></label>
+      <label>محتوا<textarea className="prepared-answer" value={draft} onChange={event=>{setDraft(event.target.value);setSaved(false)}}/></label>
+      {saved&&<div className="success-message"><Icon name="check"/> پیش‌نویس در این مرورگر ذخیره شد؛ هنوز در پایگاه داده یا درس منتشرشده ثبت نشده است.</div>}
+      <div className="form-actions"><Button tone="secondary" onClick={saveDraft}>ذخیره پیش‌نویس</Button><Button onClick={addDraftToCanvas}>افزودن به بوم درس</Button></div>
+    </section>
+  </div>;
 }
+
 
 const studentRows=[["نیلا احمدی","۸۲٪","۸۶٪","۲:۴۵"],["آرین یوسفی","۷۴٪","۸۱٪","۱:۵۰"],["رها کریمی","۶۸٪","۷۷٪","۲:۱۰"],["پارسا رضایی","۴۹٪","۶۲٪","۰:۵۵"]];
 function Students({go,path}:{go:(p:Page)=>void;path:LearningPath}){const rows=path==="python"?studentRows:[["نیلا احمدی","۸۶٪","۸۲٪","۲:۴۵"],["آرین یوسفی","۷۸٪","۸۰٪","۱:۵۰"],["رها کریمی","۶۹٪","۷۶٪","۲:۱۰"],["پارسا رضایی","۵۲٪","۶۵٪","۰:۵۵"]];return <div className="page"><Badge tone="amber">نتایج و زمان حضور در این صفحه داده نمونه است.</Badge><div className="toolbar"><div className="search"><Icon name="users"/><input placeholder="جست‌وجوی زبان‌آموز…"/></div><select><option>{path==="python"?"پایتون از پایه":"انگلیسی از پایه · A1"}</option></select><select><option>{path==="python"?"همه فصل‌ها":"همه مهارت‌ها"}</option></select></div><section className="panel table-panel"><table><thead><tr><th>زبان‌آموز</th><th>پیشرفت دوره</th><th>میانگین تمرین</th><th>زمان این هفته</th><th>آخرین فعالیت</th><th/></tr></thead><tbody>{rows.map((s,i)=><tr key={s[0]} onClick={()=>go("student")}><td><span className="student-avatar">{s[0][0]}</span><b>{s[0]}</b></td><td><div className="table-progress"><i style={{width:s[1]}}/></div>{s[1]}</td><td>{s[2]}</td><td dir="ltr">{s[3]}</td><td>{i+1} ساعت پیش</td><td><Icon name="back"/></td></tr>)}</tbody></table></section></div>}

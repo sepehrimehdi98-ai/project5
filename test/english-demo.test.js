@@ -50,9 +50,14 @@ test('builder offers a type picker, video upload, and browser demo publishing', 
   assert.match(app, /<MediaUploader path=\{path\} lessonId=/);
   assert.match(app, /localStorage\.setItem\(publishedKey/);
   assert.match(app, /StudentPublishedBlock/);
-  assert.match(app, /نمونه درخواست‌های آماده/);
-  assert.match(app, /نمایش نمونه پاسخ قابل ویرایش/);
-  assert.match(app, /نمونه قالب پاسخ/);
+  const creator = app.slice(app.indexOf('function AIDraft('), app.indexOf('\nconst studentRows='));
+  assert.match(creator, /موضوع درس/);
+  assert.match(creator, /منابع و راهنمای مدرس/);
+  assert.match(creator, /درخواست‌های آماده/);
+  assert.match(creator, /buildPreparedLessonAnswer/);
+  assert.match(creator, /به سرویس AI درخواست نمی‌فرستد/);
+  assert.doesNotMatch(creator, /requestApi|\/api\/ai|حالت.*loading/);
+  assert.match(creator, /افزودن به بوم درس/);
   assert.match(app, /inline-block-editor/);
   assert.match(app, /updateBlock\(b\.id/);
   assert.match(app, /گزینه‌ها و پاسخ درست/);
